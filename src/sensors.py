@@ -2,14 +2,16 @@ import json
 import uuid
 
 class Sensor():
-    pass
+    def __init__(self, topic):
+        self.uuid = uuid.uuid4()
+        self._topic = topic
+        self.mode = "get"
 
 class LocationSensor(Sensor):
      def __init__(self, topic) -> None:
+          super().__init__(topic)
           self._residents_count = 2
           self._residents_location = {"dummy": "sofa"}
-          self.uuid = uuid.uuid4()
-          self._topic = topic
           
      def _to_json(self) -> dict:
          return {"name": str(self.uuid), "loc": self._residents_location, "count": self._residents_count}
@@ -18,21 +20,11 @@ class LocationSensor(Sensor):
      def get_json(self):
          return self._json
      
-     def set_json(data : str): 
-         pass
-     
      def set_topic(self, topic):
          self._topic = topic
      
      def get_topic(self):
          return self._topic
-     
-class CustomEncoder(json.JSONEncoder):
-    def default(self, obj):
-        try:
-            return obj._to_json()
-        except AttributeError:
-            return super().default(obj)
         
      
 if __name__ == "__main__":

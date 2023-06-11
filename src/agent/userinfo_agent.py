@@ -1,0 +1,34 @@
+import asyncio
+import uuid
+from spade.agent import Agent as SpadeAgent
+from spade.behaviour import CyclicBehaviour
+from agents import ReflexAgent
+from agents import set_agent
+
+class DeviceAgent(ReflexAgent, SpadeAgent):
+    def __init__(self, devices : list, jid="userinfo11@sure.im", password="userinfo66", topic="") -> None:
+        super().__init__(topic, jid=jid, password=password)
+        self.devices = devices
+        
+    # Spade specific
+    class UserInfoBehav(CyclicBehaviour):
+        async def on_start(self):
+            print("Starting device nehavior . . .")
+            pass
+        
+        async def run(self):
+            print("DeviceBehav running")
+            msg = await self.receive(timeout=10)  # wait for a message for 10 seconds
+            if msg:
+                print("Message received with content: {}".format(msg.body))
+            else:
+                print("Did not received any message after 10 seconds")
+                self.kill()
+    
+    
+    async def setup(self):
+        print("Spade agent started.")
+        # 3.10 compatibility
+        self.UserInfoBehav.set_agent = set_agent
+        behavior = self.UserInfoBehav()
+        self.add_behaviour(behavior)

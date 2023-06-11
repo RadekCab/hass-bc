@@ -1,66 +1,54 @@
 import asyncio
 import uuid
 import utils
+import mqtt
 from asyncio_paho import AsyncioPahoClient
 from sensors import LocationSensor
+from sensors import Sensor
+from agent.agents import ReflexAgent
+from user import User
 
-async def publish_loop(sensors : list):
-    async def on_connect_async(client, userdata, flags_dict, result):
-        print("Connected.")
-        print(flags_dict)
-        nonlocal topic
-        await client.subscribe(topic, 1)
-        #client.subscribe("fakedevice/get")
+
+async def connect_to_topic(sensors : list):
     
-    async def on_message_async(client, userdata, msg):
-        print(f"My message: topic: {msg.topic}: payload: {str(msg.payload)}, qos; {str(msg.qos)}, reatain flag: {str(msg.retain)} Temp: {userdata}")
-        
-    async def on_connect_fail(client):
-        print("connection failed")
-        
-    async def on_subscribe(client, userdata, mid, granted_qos):
-        print("Subscribed!")   
-        print(f"mid: {str(mid)}, data: {str(userdata)}")
-        nonlocal topic
-        print("DEBUG: pulishing on topic = ", topic)
-        client.publish(topic, userdata)
-        
-    async def on_publish(client, userdata, result):
-        print("Now temperature should be set")
-        print(f"result: {str(result)}")
-    
-    broker = "127.0.0.1"
-    port = 1883
-    # TODO
-    # sekvencne, to nechceme
-    # lepsi format json dat
+    response = ""
     for sensor in sensors:  
         async with AsyncioPahoClient(str(sensor.uuid)) as client:
             topic = sensor.get_topic()
+            print(topic)
             client.username_pw_set(username="hass",password="nimda")
-            client.asyncio_listeners.add_on_connect(on_connect_async)
-            client.asyncio_listeners.add_on_connect_fail(on_connect_fail)
-            client.asyncio_listeners.add_on_message(on_message_async)
-            client.asyncio_listeners.add_on_subscribe(on_subscribe)
-            client.asyncio_listeners.add_on_publish(on_publish)
-            await client.asyncio_connect(broker, port=port, keepalive=60)
-            client.user_data_set(utils.get_json_payload(sensor))
+            #client.user_data_set(utils.get_json_payload(sensor))
+            response = await mqtt.listen_to_topic(client, topic)
+            await asyncio.sleep(5)
+            #await mqtt.listen_to_topic(client, topic, response)
             #client.user_data_set(19)
-            await asyncio.sleep(3)
+            #await asyncio.sleep(5)
+            print("RESPONSE INSIDE MAIN LOOP", client._userdata)
+
+    print("RESPONSE OUTSIDE MAIN LOOP", response)
     
     
         
 def setup():
     sensors = []
-    room1_location_sensor = LocationSensor("house/room1/location/set")
-    #room2_location_sensor = LocationSensor("house/room2/location/set")
-    sensors.append(room1_location_sensor)
+    #room1_location_sensor = LocationSensor("house/room1/temperature")
+    #room1_location_sensor = LocationSensor("outside/temperature")
+    #agent = ReflexAgent("room1/user/temp_decrease")
+    agent = ReflexAgent("house/room1/temperature")
+    #user = User("house/room1/users/add")
+    #sensors.append(room1_location_sensor)
+    sensors.append(agent)
     #sensors.append(room2_location_sensor)
-    asyncio.run(publish_loop(sensors))
+    asyncio.run(connect_to_topic(sensors))
+    
+
+async def await_start_simulation():
+    pass
   
         
         
 if __name__ == "__main__":
+    #asyncio.run(await_start_simulation())
     # add sensors
     setup()
     # make them publish on topics

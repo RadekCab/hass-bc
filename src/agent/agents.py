@@ -1,0 +1,70 @@
+import json
+import asyncio
+import uuid
+from spade.agent import Agent as SpadeAgent
+from spade.behaviour import CyclicBehaviour
+
+def set_agent(self, agent) -> None:
+        """
+        Spade method override for python 3.10 compatibility
+        """
+        
+        self.agent = agent
+        self.queue = asyncio.Queue()
+        self.presence = agent.presence
+        self.web = agent.web
+
+class Agent():
+    def __init__(self, topic) -> None:
+        self.uuid = uuid.uuid4()
+        self._topic = topic
+        
+class ReflexAgent(Agent):
+    def __init__(self, topic) -> None:
+        super().__init__(topic)
+        self._placeholder = 2
+        self._placeholder2 = {"dummy": "sofa"}
+          
+    def _to_json(self) -> dict:
+        return {"name": str(self.uuid), "loc": self._placeholder2, "count": self._placeholder}
+        #self._json = json.JSONEncoder({'count': self._residents_count, 'loc': self._residents_location})
+          
+    def get_json(self):
+        return self._json
+     
+    def set_topic(self, topic):
+        self._topic = topic
+     
+    def get_topic(self):
+        return self._topic
+        
+        
+    
+class DeviceAgent(ReflexAgent, SpadeAgent):
+    def __init__(self, devices : list, jid, password, topic="",) -> None:
+        super().__init__(topic, jid=jid, password=password)
+        self.devices = devices
+        
+    # Spade specific
+    class DeviceBehav(CyclicBehaviour):
+        async def on_start(self):
+            print("Starting device nehavior . . .")
+            pass
+        
+        async def run(self):
+            print("DeviceBehav running")
+            msg = await self.receive(timeout=10)  # wait for a message for 10 seconds
+            if msg:
+                print("Message received with content: {}".format(msg.body))
+            else:
+                print("Did not received any message after 10 seconds")
+                self.kill()
+    
+    
+    async def setup(self):
+        print("Spade agent started.")
+        self.DeviceBehav.set_agent = set_agent
+        behavior = self.DeviceBehav()
+        self.add_behaviour(behavior)
+        
+    

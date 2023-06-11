@@ -1,0 +1,10 @@
+{
+    "thermometer": {
+        "upper_limit": 23,
+        "bottom_limit": -1
+    },
+    "air_cleaner": {
+        "particle_btm_percentage": 50
+    }
+
+}

@@ -1,29 +1,14 @@
+# from __future__ import annotations
 
-# class Frame():
-#     def __init__(self, variables) -> None:
-#         if list == type(variables):
-#             self.frame = variables
-#         else:
-#             self.frame = []
-            
-# class LocalFrame(Frame):
-#     def __init__(self, variables) -> None:
-#         super().__init__(variables)
+""" class Observable(object):
+    def __call__(self, fun):
+        return fun()
 
 
-ALL_VARIABLES = {0: [], 1: [], 2: []}
-CURR_LEVEL = 0
-
-def local_frame():
-    local_variables = ALL_VARIABLES.get(CURR_LEVEL)
-    def go_deeper():
-        nonlocal local_variables
-        CURR_LEVEL = CURR_LEVEL + 1
-        
-        
-def exit_frame():
-      
-    
+class Callback(object):
+    def docallback(self):
+        inp = "haha"
+        return inp    
 
 
 if __name__ == "__main__":
@@ -33,26 +18,33 @@ if __name__ == "__main__":
     # g(b, c)
     # inside g
     # print(a) -> error
-    
-    first = 1
-    LOCAL_VARIABLES.append(first)
-    local_frame()
-    # _______________________
-    a = "a"
-    LOCAL_VARIABLES.append(a)
-    local_frame()
-    # _______________________
-    b = "b"
-    LOCAL_VARIABLES.append(b)
-    
-    try:
-        print(a)
-    except AttributeError():
-        print("mimo ramec")
-        
-    exit_frame()
-    exit_frame()
-    
-    
-    
-    pass
+    a = Observable()(Callback().docallback)
+    print (a)
+    print (type(a))
+    pass """
+
+
+class C(object):
+    def __init__(self):
+        self._x = None
+
+    def getx(self):
+        return self._x
+
+    def setx(self, value):
+        self._x = value
+
+    def delx(self):
+        del self._x
+
+    # def logic(self):
+    x = property(getx, setx, delx, "I'm the 'x' property.")
+
+
+if __name__ == "__main__":
+    c = C()
+    c.x = 30
+    print(C.x.__doc__)
+    print(c.x.fset(30))
+    print(c.x)
+    del c
