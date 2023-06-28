@@ -1,5 +1,7 @@
 # from __future__ import annotations
 
+import numpy as np
+
 """ class Observable(object):
     def __call__(self, fun):
         return fun()
@@ -41,10 +43,36 @@ class C(object):
     x = property(getx, setx, delx, "I'm the 'x' property.")
 
 
+def state_space_tests():
+    # a = np.zeros((4, 2, 3))
+    # print(a)
+    # print("4 pole, 2 radky, 3 sloupce")
+    # print(a[0])
+    m = np.zeros((96, 20, 2))
+    # increase reward for 15 degrees
+    m[0][0][0] = 100
+    print(m)
+    # for 16 degrees
+    print("get q value for 0:00 - 0:15 increase 15deg")
+    print(m[0][0][0])
+    print("get q value for 0:00 - 0:15 decrease 15deg")
+    print(m[0][0][1])
+    print("get q value for 23:45 - 0:00 decrease 25deg")
+    print(m[95][19][1])
+    print("get error")
+    try:
+        print(m[0][20][0])
+    except IndexError as e:
+        print("X")
+
+
 if __name__ == "__main__":
-    c = C()
-    c.x = 30
-    print(C.x.__doc__)
-    print(c.x.fset(30))
-    print(c.x)
-    del c
+    # state_space_tests()
+    # x = np.random.randint(3, size=(3, 2))
+    x = np.array([[1, 2], [3, 4], [4, 5]])
+    print(x)
+    print(np.array_split(x, np.flatnonzero(np.diff(x[:, 0])) + 1))
+
+    # h = np.argwhere((x[:, 1]) > 1)
+    # print(h)
+    pass

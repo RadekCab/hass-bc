@@ -1,4 +1,5 @@
 import json
+import numpy as np
 from sensors import LocationSensor
 
 class Observable(object):
@@ -15,3 +16,8 @@ class CustomEncoder(json.JSONEncoder):
 def get_json_payload(sensor : LocationSensor):
     #name = sensor.get_topic().split('/')
     return json.dumps(sensor, cls=CustomEncoder)
+
+def find_nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return array[idx]
