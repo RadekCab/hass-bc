@@ -69,9 +69,16 @@ def state_space_tests():
 if __name__ == "__main__":
     # state_space_tests()
     # x = np.random.randint(3, size=(3, 2))
-    x = np.array([[1, 2], [3, 4], [4, 5]])
-    print(x)
-    print(np.array_split(x, np.flatnonzero(np.diff(x[:, 0])) + 1))
+    
+    #x = np.array([[1, 2], [3, 4], [4, 5]])
+    #print(x)
+    #print(np.array_split(x, np.flatnonzero(np.diff(x[:, 0])) + 1))
+    
+    #print(np.zeros((96, 20, 3, 2)))
+    
+    target_temp_time = {28: 21, 66: 20}
+    if 54 in target_temp_time:
+        print(target_temp_time[54])
 
     # h = np.argwhere((x[:, 1]) > 1)
     # print(h)

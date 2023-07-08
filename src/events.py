@@ -43,7 +43,7 @@ class UserColdGenerator(Generator):
         return user_req
 
 
-def generate_cold_requests(interval=15) -> list:
+def generate_cold_requests(interval=15):
     mins = int(1440 / interval)
     intervals = np.linspace(0, 1440, mins)
     time_intervals = [str(timedelta(minutes=x)) for x in intervals]
@@ -107,7 +107,7 @@ def exp_increase_array_at_indeces(arr, feedback_indeces : dict, type="temperatur
     if type == "temperature":
         # 6 indeces after action trigger, we get desired temperature
         # that stays to the end of the list (day)
-        # TODO refactor
+        # TODO smoother, increase slower (6 not hardcoded)
         for (index,action) in feedback_indeces.items():
             sliced_arr = arr[index : index + 6]  # x, x+1, x+2, x+3, x+4, x+5
             log_modif = []
