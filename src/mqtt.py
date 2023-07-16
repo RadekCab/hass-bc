@@ -16,8 +16,8 @@ class Setting():
         self.BROKER = "127.0.0.1"
         self.PORT = 1883
         self.response = "No response"
-        
-setup = Setting("")
+
+setup = None
 
 async def on_connect_async_listen(client, userdata, flags_dict, result):
     global setup
@@ -63,9 +63,8 @@ async def on_publish(client, userdata, result):
 
 async def listen_to_topic(client : AsyncioPahoClient, topic : str):
     global setup
+    setup = Setting(topic)
     setup.TOPIC = topic
-    setting = Setting(topic)
-    setting.TOPIC = topic
     custom = "nothing"
     client.user_data_set(custom)
     client.asyncio_listeners.add_on_connect(on_connect_async_listen)
@@ -73,7 +72,7 @@ async def listen_to_topic(client : AsyncioPahoClient, topic : str):
     client.asyncio_listeners.add_on_subscribe(on_subscribe)
     client.asyncio_listeners.add_on_publish(on_publish)
     client.asyncio_listeners.add_on_message(on_message_async)
-    await client.asyncio_connect(setting.BROKER, port=setting.PORT, keepalive=60)
+    await client.asyncio_connect(setup.BROKER, port=setup.PORT, keepalive=60)
     return custom
     # if (setup.response != "No response"): 
     #     return setup.response
@@ -90,9 +89,8 @@ async def listen_to_topic(client : AsyncioPahoClient, topic : str):
 
 async def publish_to_topic(client : AsyncioPahoClient, topic : str):
     global setup
+    setup = Setting(topic)
     setup.TOPIC = topic
-    setting = Setting(topic)
-    setting.TOPIC = topic
     client.asyncio_listeners.add_on_connect(on_connect_async_publish)
     client.asyncio_listeners.add_on_connect_fail(on_connect_fail)
     client.asyncio_listeners.add_on_message(on_message_async)

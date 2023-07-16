@@ -50,6 +50,8 @@ def distribute_data_to_agents():
     # states_of_devices = get_devices_states()
     # present_users = get_users_states()
     # environmental_states = get_environmental_states()
+    # environmental_states = get_environmental_states()
+    # environmental_states = get_environmental_states()
     states_of_devices = []
     present_users = []
     environmental_states = []

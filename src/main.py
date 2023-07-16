@@ -1,6 +1,7 @@
 # from __future__ import annotations
 
 import numpy as np
+import math
 
 """ class Observable(object):
     def __call__(self, fun):
@@ -76,9 +77,60 @@ if __name__ == "__main__":
     
     #print(np.zeros((96, 20, 3, 2)))
     
-    target_temp_time = {28: 21, 66: 20}
-    if 54 in target_temp_time:
-        print(target_temp_time[54])
+    #target_temp_time = {28: 21, 66: 20}
+    #if 54 in target_temp_time:
+    #   print(target_temp_time[54])
+    
+    from myenum.action import TemperatureAction
+    #print(np.random.randint(2))
+    
+    # target_temp_time = {28: 21, 66: 20}
+    # present_time = np.hstack((np.arange(0,16,1),np.arange(26,96,1)))
+    # #print(present_time)
+    # tg_time = list(target_temp_time.keys())
+    # time_index = 36
+    # ## should see 28 as last feedback
+    # time_index_present = np.searchsorted(present_time, time_index, side='left')
+    # #print(time_index_present)
+    # relevant_time_indeces = present_time[:time_index_present+1]
+    # print(relevant_time_indeces)
+    # relevant_requests = []
+    # for fb in tg_time:
+    #     present_feedback = np.argwhere(relevant_time_indeces==fb)
+    #     if present_feedback:
+    #         relevant_requests.append(np.argwhere(relevant_time_indeces==fb))
+    #         print(f"appening {np.argwhere(relevant_time_indeces==fb)}")
+    # print(relevant_requests)
+    # relevant_requests = np.asarray(relevant_requests)
+    # print(relevant_requests.flatten())
+    # print("maximum=", np.max(relevant_requests.flatten()))
+    # print(relevant_time_indeces[np.max(relevant_requests)])
+    
+    # print(np.arange(15, 25.5, 0.5))
+    # a = np.argwhere( np.arange(15, 25, 0.5) == 17.5 ).flatten()
+    # print(a[0])
+
+    # last = 14
+    # now = 14
+    # print(round((20*(((math.log((now-last),10)-0.301)/10))-0.1),2))
+    # print(round(((now - last)/4)*(6/5),2))
+    
+    #new_temperature_plan = np.zeros((96,1))
+    #print(new_temperature_plan)
+    
+    #target_temp_time = {28: 21, 66: 20}
+    #if 21 in target_temp_time:
+    #    print("yes")
+    
+    # q_table = np.zeros((96, 20, 3, 3))
+    # print(q_table[36, 15,0+1, 2])
+    # q_table[36, 15,0+1, 2] = 5.645484
+    # print(q_table[36, 15,0+1, 2])
+    # print(q_table[36, 15])
+    
+    #print(np.random.rand(96, 21, 3, 3))
+
+    #print(arr)
 
     # h = np.argwhere((x[:, 1]) > 1)
     # print(h)
