@@ -1,6 +1,13 @@
 import json
 import numpy as np
 from sensors import LocationSensor
+from datetime import datetime
+from agent.agents import TIME_INTERVAL
+
+#INTERVAL_SHORTENER = 5 # [x/5] 3 mins intervals instead of 15min
+#INTERVAL_SHORTENER = 2 # half the time and do requests only until 0-12:00 / 12-24 ?
+#real
+INTERVAL_SHORTENER = 0
 
 class Observable(object):
     def __call__(self, fun):
@@ -25,7 +32,9 @@ class bcolors():
     UNDERLINE = '\033[4m'
 
 
-def get_json_payload(sensor : LocationSensor):
+    """sensor e.g. sensors.LocationSensor
+    """
+def get_json_payload(sensor):
     #name = sensor.get_topic().split('/')
     return json.dumps(sensor, cls=CustomEncoder)
 
@@ -41,3 +50,13 @@ def temperature_to_index(temperature):
 def index_to_temperature(index):
     temperatures = np.arange(15,25.5,0.5)
     return temperatures[index]
+
+def datetime_to_index(modifier=TIME_INTERVAL, value=None):
+    now = None
+    if value is None:
+        now = datetime.now()
+    else:
+        now = value
+    minutes = now.minute + now.hour*60
+    index = int(round(minutes/(modifier/INTERVAL_SHORTENER)))%95
+    return index

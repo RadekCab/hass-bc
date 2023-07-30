@@ -25,6 +25,33 @@ class LocationSensor(Sensor):
      
      def get_topic(self):
          return self._topic
+     
+class TemperatureSensor(Sensor):
+     def __init__(self, topic) -> None:
+          super().__init__(topic)
+          self._temperature = 0
+          self._other = {"thermometer": "wall"}
+          
+     def _to_json(self) -> dict:
+         print("temp. sensor temperature:", self._temperature)
+         return {"name": str(self.uuid), "temperature": self._temperature, "count": self._other}
+         #self._json = json.JSONEncoder({'count': self._residents_count, 'loc': self._residents_location})
+          
+     def get_json(self):
+         return self._json
+     
+     def set_topic(self, topic):
+         self._topic = topic
+     
+     def get_topic(self):
+         return self._topic
+     
+     def set_temperature(self,t):
+         self._temperature = t
+         print(f"new tmeperature == {self._temperature}")
+        
+     def set_other(self,o):
+         self._other = o
         
      
 if __name__ == "__main__":

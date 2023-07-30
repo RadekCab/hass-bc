@@ -4,6 +4,7 @@ from utils import find_nearest, temperature_to_index, index_to_temperature, bcol
 from sim_user import SimUser
 from sim_temperature import SimTemperature
 from myenum.action import TemperatureAction
+from myenum.presence import Presence
 import numpy as np
 import random
 import matplotlib.pyplot as plt
@@ -222,7 +223,7 @@ def get_starting_state():
     # derivace, cas, teplota
     # TODO few historical states
     #print(f"starting at {historical_temps[-1]}˚C")
-    return 0,0
+    return Presence.PRESENT.value,0,0
 
 
 def is_positively_rewarded(time_index, temperature_index, rewards):
@@ -233,26 +234,26 @@ def is_positively_rewarded(time_index, temperature_index, rewards):
         return True
 
 
-def get_next_temperature_action(temperature_derivative, time_index, temperature_index, epsilon, idling, q_values):
+def get_next_temperature_action(presence, temperature_derivative, time_index, temperature_index, epsilon, idling, q_values):
     if np.random.random() < epsilon:
-        if np.amax(q_values[time_index, temperature_index,temperature_derivative+1]) < 0:
+        if np.amax(q_values[presence, time_index, temperature_index,temperature_derivative+1]) < 0:
         #if np.amax(q_values[time_index, temperature_index]) < 0:
             if np.random.random() > idling:
                 return TemperatureAction.KEEP.value
-        return np.argmax(q_values[time_index, temperature_index, temperature_derivative+1])
+        return np.argmax(q_values[presence, time_index, temperature_index, temperature_derivative+1])
         #return np.argmax(q_values[time_index, temperature_index])
     else:
         return np.random.randint(2)
 
 
-def perform_temperature_action(temperature_exp_step, temp_derivative, current_temperature_index,
+def perform_temperature_action(temperature_exp_step, presence, temp_derivative, current_temperature_index,
                                action: int, Temperature_Evaluator : SimTemperature, log=False):
     # action "-1" keeps same temperature
     new_temperature_index = current_temperature_index
     new_temp_derivative = temp_derivative
     reset_exponential_increase = False
     # pause heating
-    if keep_or_opposite_action_of_derivative(temp_derivative, action):
+    if is_opposite_action_of_derivative(temp_derivative, action):
         new_temp_derivative = 0
         reset_exponential_increase = True
     # start heating in the process of cooling down (pause cooling)
@@ -284,9 +285,9 @@ def perform_temperature_action(temperature_exp_step, temp_derivative, current_te
     
     return reset_exponential_increase, new_temperature_index, new_temp_derivative
 
-def keep_or_opposite_action_of_derivative(temp_derivative, action):
+def is_opposite_action_of_derivative(temp_derivative, action):
     return ((action == TemperatureAction.INCREASE.value and temp_derivative == -1)
-        or (action == TemperatureAction.KEEP.value)
+        #or (action == TemperatureAction.KEEP.value)
         or (action == TemperatureAction.DECREASE.value and temp_derivative == 1))
 
 
@@ -297,7 +298,7 @@ def create_plan(
     TemperatureEnvironment : SimTemperature,
     mode="model_only"
     ):
-    temperature_derivative, current_time_index = get_starting_state()
+    presence,temperature_derivative, current_time_index = get_starting_state()
     current_temperature_index = temperature_to_index(current_temperature)
     #time_actions = []
     new_temperature_plan = np.zeros((96,1))
@@ -315,17 +316,17 @@ def create_plan(
         #    pass
         # simualting our inputs
         # to insert console inputs or HASS inputs
+        if current_time_index in User.get_present_time():
+            presence = Presence.PRESENT.value
         if last_unexpected_action_time+3 < current_time_index:
             prioritize = False
             input_action = None
         if current_time_index % 4 == 0 and mode != "model_only" and not never_ask_again:
             input_action, never_ask_again = get_user_live_input(mode, current_time_index, current_temperature_index)
-            if input_action == 0 or input_action == 1:
-                last_unexpected_action_time = current_time_index
+        if input_action == 0 or input_action == 1:
+            last_unexpected_action_time = current_time_index
         if input_action is not None:
             prioritize = True
-                    
-        
         new_temperature_plan[current_time_index] = index_to_temperature(current_temperature_index)
         print(f"TIME: {current_time_index}", end=" ")
         print(f"TEMPERATURE: {bcolors.BOLD}{index_to_temperature(current_temperature_index)}{bcolors.ENDC} ", end=" ")
@@ -339,7 +340,8 @@ def create_plan(
             print("NO REQUEST", end=" ")
             happy_counter += 1
         if prioritize == False:
-            action = get_next_temperature_action(temperature_derivative,current_time_index, current_temperature_index,1.,1.,q_table)
+            action = get_next_temperature_action(presence,temperature_derivative,current_time_index, current_temperature_index,
+                                                    1.,1.,q_table)
         else:
             action = input_action
         if is_repeating(last_action, second_to_last_action, action) and prioritize == False:
@@ -350,9 +352,10 @@ def create_plan(
                 action = TemperatureAction.KEEP.value
         print(f"ACTION: {action}", end=" ")
         flag, current_temperature_index, temperature_derivative = perform_temperature_action(
-            step, temperature_derivative,current_temperature_index,action,
-            TemperatureEnvironment
-            )
+                step, 
+                presence,temperature_derivative,current_temperature_index,action,
+                TemperatureEnvironment
+                )
         second_to_last_action = last_action
         last_action = action
 
@@ -362,7 +365,7 @@ def create_plan(
             print(f"{bcolors.OKBLUE}<<DECREASING<<{bcolors.ENDC}", end=" ")
         else:
             print(f"==KEEPING==", end=" ")
-                    
+                        
         if flag:
             step = 0
         else:
@@ -370,9 +373,75 @@ def create_plan(
         print(f"DER: {temperature_derivative}")
         #time_actions.append([current_time_index,action])
         current_time_index += 1
-    #return time_actions
+        #return time_actions
     print(f"Inhabitant is happy {round(happy_counter*100/96,2)}% of the day.")
     return new_temperature_plan
+
+def process_one_time_interval(q_table, User,
+                              TemperatureEnvironment, mode,
+                              temperature_derivative, current_time_index,
+                              presence,
+                              current_temperature_index, new_temperature_plan,
+                              step, last_action, second_to_last_action,
+                              happy_counter, last_unexpected_action_time, never_ask_again):
+    if current_time_index in User.get_present_time():
+        presence = Presence.PRESENT.value
+    if last_unexpected_action_time+3 < current_time_index:
+        prioritize = False
+        input_action = None
+    if current_time_index % 4 == 0 and mode != "model_only" and not never_ask_again:
+        input_action, never_ask_again = get_user_live_input(mode, current_time_index, current_temperature_index)
+        if input_action == 0 or input_action == 1:
+            last_unexpected_action_time = current_time_index
+    if input_action is not None:
+        prioritize = True
+                    
+        
+    new_temperature_plan[current_time_index] = index_to_temperature(current_temperature_index)
+    print(f"TIME: {current_time_index}", end=" ")
+    print(f"TEMPERATURE: {bcolors.BOLD}{index_to_temperature(current_temperature_index)}{bcolors.ENDC} ", end=" ")
+    user_request = User.get_user_request_per_timeframe(current_time_index,current_temperature_index,tolerance=1.)
+    if user_request and temperature_derivative != 0:
+        print(f"IGNORED REQUEST DURING CHANGE", end=" ")
+        happy_counter +=1
+    if user_request is not None:
+        print(f"{bcolors.WARNING}MODEL USER UNHAPPY <{user_request.value}> {bcolors.ENDC}", end=" ")
+    else:
+        print("NO REQUEST", end=" ")
+        happy_counter += 1
+    if prioritize == False:
+        action = get_next_temperature_action(presence,temperature_derivative,current_time_index, current_temperature_index,
+                                                 1.,1.,q_table)
+    else:
+        action = input_action
+    if is_repeating(last_action, second_to_last_action, action) and prioritize == False:
+        print(f"{bcolors.OKCYAN}REPEATING DETECTED!{bcolors.ENDC}", end=" ")
+        if action == TemperatureAction.INCREASE.value:
+            action = TemperatureAction.KEEP.value
+        if action == TemperatureAction.DECREASE.value:
+            action = TemperatureAction.KEEP.value
+    print(f"ACTION: {action}", end=" ")
+    flag, current_temperature_index, temperature_derivative = perform_temperature_action(
+            step, 
+            presence,temperature_derivative,current_temperature_index,action,
+            TemperatureEnvironment
+            )
+    second_to_last_action = last_action
+    last_action = action
+
+    if action == TemperatureAction.INCREASE.value and (temperature_derivative == 0 or temperature_derivative == 1):
+        print(f"{bcolors.FAIL}>>INCREASING>>{bcolors.ENDC}", end=" ")
+    elif action == TemperatureAction.DECREASE.value and (temperature_derivative == 0 or temperature_derivative == -1):
+        print(f"{bcolors.OKBLUE}<<DECREASING<<{bcolors.ENDC}", end=" ")
+    else:
+        print(f"==KEEPING==", end=" ")
+                    
+    if flag:
+        step = 0
+    else:
+        step += 1
+    print(f"DER: {temperature_derivative}")
+        #time_actions.append([current_time_index,action])
 
 def get_user_live_input(mode, current_time_index, current_temperature_index):
     input_action = None
@@ -405,7 +474,7 @@ def training(
     rewards=None ) -> np.ndarray:
     # TODO derivative in q table
     #q_table = np.zeros((96, 21, 3, 3))
-    q_table = np.random.rand(96, 21, 3, 3)
+    q_table = np.random.rand(2, 96, 21, 3, 3)
     #q_table = np.zeros((96, 21, 2))
     
     epsilon = 0.8
@@ -413,14 +482,18 @@ def training(
     idling = 0.6
     discount_factor = 0.2
     learning_rate = 0.99
+    
+    
     # TODO perform just increase action and in few next steps keep increasing temperature and returning 
     # positive derivative/or negative for decrease
     # remove hardcoded temperature from perform, ignore request  in the process of increase
+
+    
     last_user_request_type = None
-    for episode in range(2000):
+    for episode in range(1500):
         # starting time and temperature
         #print(episode)
-        temperature_derivative, time_index = get_starting_state()
+        presence, temperature_derivative, time_index = get_starting_state()
         temperature_index = temperature_to_index(temperature)
         # choose between positively rewarded states
         # TODO new learning, derivative
@@ -438,9 +511,12 @@ def training(
             #user_interputions = []
             #print(time_index, temperature_index)
             #print(type(time_index), type(temperature_index))
+            presence = Presence.NOT_PRESENT.value
+            if time_index in User.get_present_time():
+                presence = Presence.PRESENT.value
             
             q_action = get_next_temperature_action(
-                    temperature_derivative,time_index, temperature_index, epsilon, idling, q_table
+                    presence,temperature_derivative,time_index, temperature_index, epsilon, idling, q_table
                 )
             # e.g. we need to stop it from doing increase action if last 
             # one was decrease and before that increase, so do different
@@ -458,7 +534,7 @@ def training(
 
             change_complete_flg, temperature_index, temperature_derivative = perform_temperature_action(
                 temperature_change_step, 
-                temperature_derivative, temperature_index, real_action,
+                presence, temperature_derivative, temperature_index, real_action,
                 TemperatureEnvironment
             )
             second_to_last_action = last_action
@@ -494,7 +570,7 @@ def training(
                 penalty = -500
                 last_request_time_index = time_index
                 last_user_request_type = user_request
-            elif user_request is None:
+            elif user_request is None and presence != Presence.NOT_PRESENT.value:
                 penalty = calc_request_delta_penalty(last_request_time_index, time_index)
                 #print(penalty)
             # agent attempting out of bounds actions
@@ -505,11 +581,12 @@ def training(
             #print("penalty:", penalty)
             ####reward = rewards[time_index, temperature_index]
             # calculate temporal difference
-            old_q_value = q_table[time_index, old_temperature_index, old_temperature_derivative+1, q_action]
+            old_q_value = q_table[presence, time_index, old_temperature_index, old_temperature_derivative+1, q_action]
             #old_q_value = q_table[time_index, old_temperature_index, action]
             # TODO look into this
             temporal_difference = penalty + (
                 discount_factor * np.max(q_table[
+                    presence,
                     time_index,
                     temperature_index,
                     temperature_derivative+1
@@ -526,12 +603,13 @@ def training(
             #    print("old better")
             
             # +1 for derivative indexing
-            q_table[time_index, old_temperature_index,old_temperature_derivative+1, q_action] = new_q_value
+            q_table[presence, time_index, old_temperature_index,old_temperature_derivative+1, q_action] = new_q_value
             #q_table[time_index, old_temperature_index, action] = new_q_value
 
             # move to next time interval
             #print("time_index", time_index)
-            if time_index == 95:
+            if time_index == 95 and episode%500==0:
+                print(". . .", end=" ")
                 #if episode == 999:
                     #print(f"User requests in last episode: {user_interputions}")
                 # one day learning reached
@@ -540,14 +618,15 @@ def training(
                 #    with open("q_tables.txt", "a") as f:
                 #        print(q_table, file=f)
                 #        print("\n\n\n", file=f)
-                break
                 #time_index += 1
                 # 24h reached
                 #if time_index == starting_time:
                 #    break
+            if time_index == 95:
+                break
             
                 
-    print(np.unique(q_table))
+    #print(np.unique(q_table))
     print("Day strategy learnt")
     return q_table
 

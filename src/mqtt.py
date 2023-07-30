@@ -21,45 +21,50 @@ setup = None
 
 async def on_connect_async_listen(client, userdata, flags_dict, result):
     global setup
-    print("Trying to subscribe to topic.", setup.TOPIC)
-    print("flags:", flags_dict)
+    #print("Trying to subscribe to topic.", setup.TOPIC)
+    #print("flags:", flags_dict)
     # agent wants to get data
-    # TODO jenom subscribe a nastavit v mqtt.yaml
-    await client.subscribe(setup.TOPIC, 1)
+    await client.subscribe(setup.TOPIC,0)
     #await client.publish(TOPIC+"/get", 1)
     #await asyncio.sleep(.5)
     #client.subscribe("fakedevice/get")
         
 async def on_connect_async_publish(client, userdata, flags_dict, result):
     global setup
-    print("Trying to subscribe to topic.", setup.TOPIC)
-    print("flags:", flags_dict)
+    #print("Trying to subscribe to topic.", setup.TOPIC, userdata)
+    #print("flags:", flags_dict)
     # agents wants to set data or
     # fake sensor sets data
-    await client.publish(setup.TOPIC+"/set", 1)   
+    #print("Publishing", userdata)
+    await client.publish(setup.TOPIC, userdata, retain=False)   
     #await asyncio.sleep(.5)
     #client.subscribe("fakedevice/get")
     
 async def on_message_async(client : AsyncioPahoClient, userdata, msg):
-    print(f"RECEIVED: topic: {msg.topic}: payload: {str(msg.payload)}, qos; {str(msg.qos)}, reatain flag: {str(msg.retain)}")
+    #print(f"RECEIVED: topic: {msg.topic}: payload: {str(msg.payload)}, qos; {str(msg.qos)}, retain flag: {str(msg.retain)}")
     #setting.response = msg.payload.decode("utf-8")
-    
-    client.user_data_set(msg.payload.decode("utf-8"))
+    received_payload = msg.payload.decode("utf-8")
+    if (received_payload == ''):
+        client.user_data_set("Empty response.")
+    else:
+        client.user_data_set(received_payload)
+    msg = None
     #print(str(msg.payload.decode("utf-8")))
         
         
 async def on_connect_fail(client):
-    print("connection failed")
+    print("MQTT: connection failed")
         
 async def on_subscribe(client, userdata, mid, granted_qos):
-    print("Subscribed!")   
-    print(f"mid: {str(mid)}, userdata: {str(userdata)}")
+    #print("Subscribed!")   
+    #print(f"mid: {str(mid)}, userdata: {str(userdata)}")
     #client.publish(topic, userdata)
+    pass
         
 async def on_publish(client, userdata, result):
-    print("Published.")
-    # TODO CO ZNAMENA 2
-    print(f"publish response: {str(result)}")
+    #print(f"Published {userdata}.")
+    #print(f"publish response: {str(result)}")
+    pass
 
 async def listen_to_topic(client : AsyncioPahoClient, topic : str):
     global setup

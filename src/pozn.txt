@@ -1,0 +1,10 @@
+-Zdokumentovat kod
+-Simulovany model teploty vs realita (prvni iterace jako ruzne zasahy (naucit se SimTemperature))
+ + venkovni teplota
+-Otazka pri preuceni vychazet z realnych dat
+-Po preuceni experimentovani s uzivatelem k obohaceni knowledge (snizovat) (energeticka uspornost)
+-Pamatovat si stavy vseho mozneho v HASS, az se nepublikovali jen zmeny
+-Simulace zamenitelna za realitu bez dalsich uprav agentu
+-Agent zpracuje v jednom intervalu vice pozadavku (ne)porusovani Markov.
+-Back propagace Q learningu (chci snizit, i minule intervaly prehodnotit hur)
+-TD learning, na zaklade minulosti / podle Monte Carlo si pamatovat minule stavy

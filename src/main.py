@@ -65,9 +65,45 @@ def state_space_tests():
         print(m[0][20][0])
     except IndexError as e:
         print("X")
+        
+class Tokenizer():
+    """Tokenize text"""
+    def __init__(self, text):
+        print('Start Tokenizer.__init__()')
+        self.tokens = text.split()
+        print('End Tokenizer.__init__()')
+
+
+class WordCounter():
+    """Count words in text"""
+    def __init__(self, words):
+        print('Start WordCounter.__init__()')
+        self.word_count = len(words)
+        print('End WordCounter.__init__()')
+
+
+class TextDescriber(WordCounter, Tokenizer):
+    """Describe text with multiple metrics"""
+    def __init__(self, text, words):
+        print('Start init TextDescriber.__init__()')
+        WordCounter.__init__(self, words)
+        Tokenizer.__init__(self, text)
+        print('End init TextDescriber.__init__()')
+
+
+
 
 
 if __name__ == "__main__":
+    
+    # td = TextDescriber('row row row your boat', 'word word')
+    # print('--------')
+    # print(td.tokens)
+    # print(td.word_count)
+    
+    
+    
+    
     # state_space_tests()
     # x = np.random.randint(3, size=(3, 2))
     
@@ -131,7 +167,14 @@ if __name__ == "__main__":
     #print(np.random.rand(96, 21, 3, 3))
 
     #print(arr)
-
+    # heat_at =   [12,13,52,70]
+    # noheat_at = [24,72]
+    # for noh in noheat_at:
+    #     np.where(heat_at < noh)
+    # for a,b in (heat_at, noheat_at):
+    #     print(a,b)
     # h = np.argwhere((x[:, 1]) > 1)
     # print(h)
+    
+    print(np.zeros(6))
     pass

@@ -2,18 +2,22 @@ import asyncio
 import uuid
 from spade.agent import Agent as SpadeAgent
 from spade.behaviour import CyclicBehaviour
-from agents import ReflexAgent
-from agents import set_agent
+from agent.agents import ReflexAgent
+from agent.agents import set_agent
 
 class DeviceAgent(ReflexAgent, SpadeAgent):
-    def __init__(self, devices : list, jid="devices11@sure.im", password="devices66", topic="") -> None:
-        super().__init__(topic, jid=jid, password=password)
-        self.devices = devices
+    def __init__(self, devices : list, jid, password, uuid, topic="") -> None:
+       ReflexAgent.__init__(self, topic, uuid)
+       SpadeAgent.__init__(self, jid, password)
+       self.devices = devices
+    
+    #def __init__(self, jid, password, devices, topic):
+    #    super(DeviceAgent, self).__init__(topic, )
         
     # Spade specific
-    class DeviceBehav(CyclicBehaviour):
+    class Blueprint(CyclicBehaviour):
         async def on_start(self):
-            print("Starting device nehavior . . .")
+            print("Starting device behavior . . .")
             pass
         
         async def run(self):
@@ -28,7 +32,8 @@ class DeviceAgent(ReflexAgent, SpadeAgent):
     
     async def setup(self):
         print("Spade agent started.")
-        # 3.10 compatibility
-        self.DeviceBehav.set_agent = set_agent
-        behavior = self.DeviceBehav()
+        # uncomment for Spade v3.2.3 compatibility
+        # self.DeviceBehav.set_agent = set_agent
+        
+        behavior = self.Blueprint()
         self.add_behaviour(behavior)

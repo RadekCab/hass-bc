@@ -4,9 +4,12 @@ import uuid
 from spade.agent import Agent as SpadeAgent
 from spade.behaviour import CyclicBehaviour
 
+sem = asyncio.Semaphore()
+TIME_INTERVAL = 15
+
 def set_agent(self, agent) -> None:
         """
-        Spade method override for python 3.10 compatibility
+        Spade v3.2.3 (or lower - not tested) method override for python 3.10 compatibility
         """
         
         self.agent = agent
@@ -14,29 +17,36 @@ def set_agent(self, agent) -> None:
         self.presence = agent.presence
         self.web = agent.web
 
-class Agent():
-    def __init__(self, topic) -> None:
-        self.uuid = uuid.uuid4()
-        self._topic = topic
+# class Agent():
+#     def __init__(self, topic) -> None:
+#         self.uuid = uuid.uuid4()
+#         self._topic = topic
         
-class ReflexAgent(Agent):
-    def __init__(self, topic) -> None:
-        super().__init__(topic)
-        self._placeholder = 2
-        self._placeholder2 = {"dummy": "sofa"}
+class ReflexAgent():
+    def __init__(self, topic, uuid) -> None:
+        self.uuid = uuid
+        self.topic = topic
+        self._attribute1 = 0
+        self._attribute2 = {"dummy": "sofa"}
           
     def _to_json(self) -> dict:
-        return {"name": str(self.uuid), "loc": self._placeholder2, "count": self._placeholder}
+        return {"name": str(self.uuid), "loc": self._attribute2, "count": self._attribute1}
         #self._json = json.JSONEncoder({'count': self._residents_count, 'loc': self._residents_location})
           
     def get_json(self):
         return self._json
      
     def set_topic(self, topic):
-        self._topic = topic
+        self.topic = topic
      
     def get_topic(self):
-        return self._topic
+        return self.topic
+    
+    def set_attribute1(self,attribute):
+        self._attribute1 = attribute
+        
+    def set_attribute2(self,attribute):
+        self._attribute2 = attribute
         
         
     
@@ -48,7 +58,7 @@ class DeviceAgent(ReflexAgent, SpadeAgent):
     # Spade specific
     class DeviceBehav(CyclicBehaviour):
         async def on_start(self):
-            print("Starting device nehavior . . .")
+            print("Starting xmpp messaging behavior . . .")
             pass
         
         async def run(self):

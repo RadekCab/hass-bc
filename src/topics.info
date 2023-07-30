@@ -1,0 +1,21 @@
+outside/
+        temperature/
+                    get
+
+house  /
+        <room>...
+        room  1/
+                temperature/
+                users      /
+                            get
+                            set
+                user       /
+                            add
+                            remove
+                            temp_decrease
+                            temp_increase
+                plan       /
+                            noheating
+                            heating
+hass/
+    start_sim

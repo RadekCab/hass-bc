@@ -4,7 +4,7 @@ from myenum.action import TemperatureAction
 from utils import index_to_temperature, temperature_to_index
 
 class SimUser():
-    def __init__(self,name,leave : list, arrive : list, targets : dict, is_sim=True):
+    def __init__(self,name,leave : list, arrive : list, targets: dict ={}, is_sim=True):
         self._setting = 1
         # sorted!
         self.target_temp_time = targets
@@ -20,6 +20,9 @@ class SimUser():
     def _calc_present_time(self,leave, arrive):
         # TODO will change with hass timeplan
         return np.hstack((np.arange(0,leave[0],1),np.arange(arrive[0],96,1)))
+
+    def get_present_time(self):
+        return self._present_time
 
     def get_name(self):
         return self._name
@@ -110,6 +113,16 @@ class SimUser():
         if sim_no_requests_yet:
             return relevant_time_indeces[np.min(relevant_requests)]
         return relevant_time_indeces[np.max(relevant_requests)]
+    
+    def process_temperature_targets_from_intervals(self,baseline,heat_at,noheat_at):
+        for h in heat_at:
+            if h == -1:
+                continue
+            self.target_temp_time[h] = baseline+1
+        for h in noheat_at:
+            if h == -1:
+                continue
+            self.target_temp_time[h] = baseline-1
   
     setting = property(get_setting, set_setting, doc="Current setting.")
     name = property(get_name, set_name, doc="Name.")
