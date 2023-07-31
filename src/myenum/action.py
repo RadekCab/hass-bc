@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class TemperatureAction(Enum):
     INCREASE = 0
     DECREASE = 1

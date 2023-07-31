@@ -1,72 +1,54 @@
-import asyncio
-import uuid
-import time
-from utils import Observable
 from asyncio_paho import AsyncioPahoClient
-from sensors import LocationSensor
-from sensors import Sensor
-from agent.agents import ReflexAgent
-from user import User
 
 
-
-class Setting():
+class Setting:
     def __init__(self, topic):
         self.TOPIC = topic
         self.BROKER = "127.0.0.1"
         self.PORT = 1883
         self.response = "No response"
 
+
 setup = None
+
 
 async def on_connect_async_listen(client, userdata, flags_dict, result):
     global setup
-    #print("Trying to subscribe to topic.", setup.TOPIC)
-    #print("flags:", flags_dict)
+
     # agent wants to get data
-    await client.subscribe(setup.TOPIC,0)
-    #await client.publish(TOPIC+"/get", 1)
-    #await asyncio.sleep(.5)
-    #client.subscribe("fakedevice/get")
-        
+    await client.subscribe(setup.TOPIC, 0)
+    # await client.publish(TOPIC+"/get", 1)
+    # await asyncio.sleep(.5)
+    # client.subscribe("fakedevice/get")
+
+
 async def on_connect_async_publish(client, userdata, flags_dict, result):
     global setup
-    #print("Trying to subscribe to topic.", setup.TOPIC, userdata)
-    #print("flags:", flags_dict)
-    # agents wants to set data or
-    # fake sensor sets data
-    #print("Publishing", userdata)
-    await client.publish(setup.TOPIC, userdata, retain=False)   
-    #await asyncio.sleep(.5)
-    #client.subscribe("fakedevice/get")
-    
-async def on_message_async(client : AsyncioPahoClient, userdata, msg):
-    #print(f"RECEIVED: topic: {msg.topic}: payload: {str(msg.payload)}, qos; {str(msg.qos)}, retain flag: {str(msg.retain)}")
-    #setting.response = msg.payload.decode("utf-8")
+    await client.publish(setup.TOPIC, userdata, retain=False)
+
+
+async def on_message_async(client: AsyncioPahoClient, userdata, msg):
     received_payload = msg.payload.decode("utf-8")
-    if (received_payload == ''):
+    if received_payload == "":
         client.user_data_set("Empty response.")
     else:
         client.user_data_set(received_payload)
     msg = None
-    #print(str(msg.payload.decode("utf-8")))
-        
-        
+
+
 async def on_connect_fail(client):
     print("MQTT: connection failed")
-        
+
+
 async def on_subscribe(client, userdata, mid, granted_qos):
-    #print("Subscribed!")   
-    #print(f"mid: {str(mid)}, userdata: {str(userdata)}")
-    #client.publish(topic, userdata)
-    pass
-        
-async def on_publish(client, userdata, result):
-    #print(f"Published {userdata}.")
-    #print(f"publish response: {str(result)}")
     pass
 
-async def listen_to_topic(client : AsyncioPahoClient, topic : str):
+
+async def on_publish(client, userdata, result):
+    pass
+
+
+async def listen_to_topic(client: AsyncioPahoClient, topic: str):
     global setup
     setup = Setting(topic)
     setup.TOPIC = topic
@@ -79,20 +61,9 @@ async def listen_to_topic(client : AsyncioPahoClient, topic : str):
     client.asyncio_listeners.add_on_message(on_message_async)
     await client.asyncio_connect(setup.BROKER, port=setup.PORT, keepalive=60)
     return custom
-    # if (setup.response != "No response"): 
-    #     return setup.response
-    # try:
-    #     while True:
-    #         if (setup.response != "No response"): 
-    #             return setup.response
-    #         time.sleep(1)
-    # except KeyboardInterrupt:
-    #     print("Stopping...")
-    
-    #response = Observable()(client.asyncio_listeners.add_on_message(on_message_async))
-    
 
-async def publish_to_topic(client : AsyncioPahoClient, topic : str):
+
+async def publish_to_topic(client: AsyncioPahoClient, topic: str):
     global setup
     setup = Setting(topic)
     setup.TOPIC = topic
@@ -102,5 +73,5 @@ async def publish_to_topic(client : AsyncioPahoClient, topic : str):
     client.asyncio_listeners.add_on_subscribe(on_subscribe)
     client.asyncio_listeners.add_on_publish(on_publish)
     await client.asyncio_connect(setup.BROKER, port=setup.PORT, keepalive=60)
-    # TODO doesnt work, use future?
+
     return setup.response
