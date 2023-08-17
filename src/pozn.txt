@@ -1,10 +1,36 @@
+
+v dusledku je potreba:
+    TODO:
+    - tempmodel zaznamenava, kdy se topi a teplotu neustale, kazdou vterinu (vterina - teplota), (vterina - no/heating)
+    - user ulozi cas a svoje pozadavky do souboru (vterina - pozadavek) 350;0;\n == vterina 350;increse;
+    - pak plotnout timeplan nejak ciste po requestech, vyuzit interactive a ty exp dings
+    DONE:
+    - posilat pokyny z temp. agenta do simTempu
+    - temperature agent separovat to jak ziskava teplotu - ne z hass ale z real
+    - v simtempu processnout a ulozit do souboru
+    - njelip asi notifikace userovi, nebo check souboru v case
+    - user pak otevre file a zpracuje temp. a s nejakou malou pravdepodbnosti posle request
+
+- zvyraznit v prezentaci komunikaci
+
+- automatizovany uzivatel (jako v learningu) ALE reagujici na realny system se stats zaznamenanymi pozadavky
+- automatizovany teplotni model (jako v learningu) ALE vracejici teploty misto hass
+-Simulovany uzivatel, hodne urychleny rezim / kvuli "realnemu" vyvoji teploty a vizualizace, grafy
+/odkud kam se ridi jaka ifnormace
+- problematika budouvy uvest nutnost parametrizace analtickeho modelu / explorationu
+
+
 -Zdokumentovat kod
 -Simulovany model teploty vs realita (prvni iterace jako ruzne zasahy (naucit se SimTemperature))
  + venkovni teplota
 -Otazka pri preuceni vychazet z realnych dat
--Po preuceni experimentovani s uzivatelem k obohaceni knowledge (snizovat) (energeticka uspornost)
+-Po preuceni experimentovani s uzivatelem k obohaceni knowledge 
+(snizovat) (energeticka uspornost)
 -Pamatovat si stavy vseho mozneho v HASS, az se nepublikovali jen zmeny
 -Simulace zamenitelna za realitu bez dalsich uprav agentu
 -Agent zpracuje v jednom intervalu vice pozadavku (ne)porusovani Markov.
 -Back propagace Q learningu (chci snizit, i minule intervaly prehodnotit hur)
 -TD learning, na zaklade minulosti / podle Monte Carlo si pamatovat minule stavy
+
+
+

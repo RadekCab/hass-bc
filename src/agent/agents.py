@@ -5,6 +5,7 @@ from spade.agent import Agent as SpadeAgent
 from spade.behaviour import CyclicBehaviour
 
 sem = asyncio.Semaphore()
+sem2 = asyncio.Semaphore()
 TIME_INTERVAL = 15
 
 

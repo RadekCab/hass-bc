@@ -5,21 +5,27 @@ from spade.behaviour import CyclicBehaviour
 from agent.agents import ReflexAgent
 from agent.agents import set_agent
 
+
 class DeviceAgent(ReflexAgent, SpadeAgent):
-    def __init__(self, devices : list, jid, password, uuid, topic="") -> None:
-       ReflexAgent.__init__(self, topic, uuid)
-       SpadeAgent.__init__(self, jid, password)
-       self.devices = devices
-    
-    #def __init__(self, jid, password, devices, topic):
-    #    super(DeviceAgent, self).__init__(topic, )
-        
+    """Blueprint providing helpful structure for creating
+    agent observing any device
+
+    Args:
+        ReflexAgent class: Reflex agent
+        SpadeAgent class: Agent defined in Spade library
+    """
+
+    def __init__(self, devices: list, jid, password, uuid, topic="") -> None:
+        ReflexAgent.__init__(self, topic, uuid)
+        SpadeAgent.__init__(self, jid, password)
+        self.devices = devices
+
     # Spade specific
     class Blueprint(CyclicBehaviour):
         async def on_start(self):
             print("Starting device behavior . . .")
             pass
-        
+
         async def run(self):
             print("DeviceBehav running")
             msg = await self.receive(timeout=10)  # wait for a message for 10 seconds
@@ -28,12 +34,11 @@ class DeviceAgent(ReflexAgent, SpadeAgent):
             else:
                 print("Did not received any message after 10 seconds")
                 self.kill()
-    
-    
+
     async def setup(self):
         print("Spade agent started.")
         # uncomment for Spade v3.2.3 compatibility
         # self.DeviceBehav.set_agent = set_agent
-        
+
         behavior = self.Blueprint()
         self.add_behaviour(behavior)

@@ -35,30 +35,24 @@ class LearningAgent(SpadeAgent):
         SpadeAgent class: Agent defined in Spade library
     """
 
-    class RecvBehav(CyclicBehaviour):
-        async def run(self):
-            msg = await self.receive(timeout=6)  # wait for a message
-            if msg:
-                print("------Message received with content: {}".format(msg.body))
-
-        async def on_end(self):
-            await self.agent.stop()
-
     class RecvTimeplanBehav(CyclicBehaviour):
         async def run(self):
-            msg = await self.receive(timeout=6)  # wait for a message
+            msg = await self.receive(timeout=5)  # wait for a message
             if msg:
                 # print(msg.body)
                 if msg.body.split(sep=":", maxsplit=1)[0] == "timeplan_reply":
                     heat_dict, noheat_dict = self.get_timeplan_values_from_message(msg)
-
+                    print("Learning agent: checking non empty timeplan: ", heat_dict, noheat_dict)
                     print(
                         "Learning Agent: Timeplan set. Default Temperature is:",
                         self.get("default_temperature"),
                     )
+
                     # print("heat:", heat_dict, "noheat", noheat_dict)
                     self.set("timeplan_heat", heat_dict)
                     self.set("timeplan_noheat", noheat_dict)
+                    if self.get("fastmode"):
+                        self.set("init_complete", True)
                 else:
                     print("WARN Learning Agent: Wrong Timeplan Format Received")
 
@@ -70,12 +64,12 @@ class LearningAgent(SpadeAgent):
 
     class RecvTemperatureBehav(CyclicBehaviour):
         async def run(self):
-            msg = await self.receive(timeout=10)  # wait for a message
+            msg = await self.receive(timeout=7)  # wait for a message
             if msg:
                 mes_arr = msg.body.split(sep=":")
                 if mes_arr[0] == "Temperature":
                     temp = mes_arr[1]
-                    self.set("default_temperature", temp)
+                    self.set("default_temperature", float(temp))
                 elif mes_arr[0] == "Request":
                     Inhabitant = self.get(USER_GROUP_KNOWLEDGE)
                     heat_at = self.get("timeplan_heat")
@@ -95,7 +89,9 @@ class LearningAgent(SpadeAgent):
         async def run(self):
             if int(self.get(TEMPERATURE_DICT_INDEX)) != 0:
                 print("INIT:", self.get(TEMPERATURE_DICT_INDEX), "/ 12")
-            msg = await self.receive(timeout=5)  # wait for a message
+            msg = await self.receive(timeout=4)  # wait for a message
+            if int(self.get(TEMPERATURE_DICT_INDEX)) == 12:
+                self.kill()
             if msg:
                 temp = msg.body.split(sep=":")[1]
                 temp_dict = self.get(TEMPERATURE_DICT_PROPERTY)
@@ -104,51 +100,44 @@ class LearningAgent(SpadeAgent):
                 i = self.get(TEMPERATURE_DICT_INDEX)
                 self.set(TEMPERATURE_DICT_INDEX, i + 1)
 
+        async def on_end(self):
+            print("Learning agent: stopped receiving temp..")
+
     class TemperatureQueryBehav(PeriodicBehaviour):
         # add behaviour together with ParameterSelfCheckBehav !
         async def run(self):
-            msg = Message(
-                to="devices12@sure.im", sender=LEARNING_SELF, body="temperature"
-            )  # Set the message content
+            msg = Message(to="devices12@sure.im", sender=LEARNING_SELF, body="temperature")  # Set the message content
             msg.set_metadata("performative", "query")
             await self.send(msg)
-            print("Learning Agent: Message Request sent to TempAgent!")
+            print("Learning Agent: Message Request 1 sent to TempAgent!")
 
     class DefaultTemperatureQueryBehav(OneShotBehaviour):
         # add behaviour together with ParameterSelfCheckBehav !
         async def run(self):
             await asyncio.sleep(3)
-            msg = Message(
-                to="devices12@sure.im", sender=LEARNING_SELF, body="temperature"
-            )  # Set the message content
+            msg = Message(to="devices12@sure.im", sender=LEARNING_SELF, body="temperature")  # Set the message content
             msg.set_metadata("performative", "query")
             await self.send(msg)
-            print("Learning Agent: Message Request sent to TempAgent!")
+            print("Learning Agent: Message Request 2 sent to TempAgent!")
 
     class StartHeatingQueryBehav(OneShotBehaviour):
         async def run(self):
-            msg = Message(
-                to="devices12@sure.im", sender=LEARNING_SELF, body="start_heating"
-            )  # Set the message content
+            msg = Message(to="devices12@sure.im", sender=LEARNING_SELF, body="start_heating")  # Set the message content
             msg.set_metadata("performative", "query")
             await self.send(msg)
-            print("Learning Agent: Message Request sent to TempAgent!")
+            print("Learning Agent: Message Request 3 sent to TempAgent!")
 
     class StopHeatingQueryBehav(OneShotBehaviour):
         async def run(self):
-            msg = Message(
-                to="devices12@sure.im", sender=LEARNING_SELF, body="stop_heating"
-            )  # Set the message content
+            msg = Message(to="devices12@sure.im", sender=LEARNING_SELF, body="stop_heating")  # Set the message content
             msg.set_metadata("performative", "query")
             await self.send(msg)
-            print("Learning Agent: Message Request sent to TempAgent!")
+            print("Learning Agent: Message Request 4 sent to TempAgent!")
 
     class TimePlanQueryBehav(OneShotBehaviour):
         async def run(self):
             await asyncio.sleep(12)
-            msg = Message(
-                to="userinfo11@sure.im", sender=LEARNING_SELF, body="timeplan"
-            )  # Set the message content
+            msg = Message(to="userinfo11@sure.im", sender=LEARNING_SELF, body="timeplan")  # Set the message content
             msg.set_metadata("performative", "query")
             await self.send(msg)
             print("Learning Agent: Message Request sent to UserAgent!")
@@ -158,9 +147,7 @@ class LearningAgent(SpadeAgent):
             Inhabitant = self.get(USER_GROUP_KNOWLEDGE)
             heat_at = list(self.get("timeplan_heat").keys())
             noheat_at = list(self.get("timeplan_noheat").keys())
-            Inhabitant.process_temperature_targets_from_intervals(
-                float(self.get("default_temperature")), heat_at, noheat_at
-            )
+            Inhabitant.process_temperature_targets_from_intervals(float(self.get("default_temperature")), heat_at, noheat_at)
 
             heat_temperatures = np.asarray(list(self.get("heating_requests").values()))
             stop_temperatures = np.asarray(list(self.get("stopheat_requests").values()))
@@ -172,6 +159,7 @@ class LearningAgent(SpadeAgent):
             )
             print("Learning Temperatures For Model:", temperatures)
             default_temp = float(self.get("default_temperature"))
+            # TODO maybe add instance to knowledge
             TemperatureModel = SimTemperature(default_temp, temperatures, exp_init=True)
             print(
                 "Learning Starting Temperature In Env. Model:",
@@ -190,6 +178,7 @@ class LearningAgent(SpadeAgent):
             activate_learning = True
             if int(self.get(TEMPERATURE_DICT_INDEX)) >= 12:
                 b = self.get("period_temp_behav")
+                print("checking if has behav")
                 if self.agent.has_behaviour(b):
                     print(
                         "Now we have gathered experimental data: ",
@@ -197,41 +186,35 @@ class LearningAgent(SpadeAgent):
                     )
                     self.agent.remove_behaviour(b)
                     self.set(TEMPERATURE_DICT_INDEX, 0)
-                    self.set(
-                        INIT_STOPHEAT_TEMPERATURES, self.get(TEMPERATURE_DICT_PROPERTY)
-                    )
+                    self.set(INIT_STOPHEAT_TEMPERATURES, self.get(TEMPERATURE_DICT_PROPERTY))
                     self.set("init_complete", True)
-                print(
-                    f"Initalization Temperatures (+): {self.get(INIT_HEAT_TEMPERATURES)}"
-                )
-                print(
-                    f"Initalization Temperatures (-): {self.get(INIT_STOPHEAT_TEMPERATURES)}"
-                )
+                print(f"Initalization Temperatures (+): {self.get(INIT_HEAT_TEMPERATURES)}")
+                print(f"Initalization Temperatures (-): {self.get(INIT_STOPHEAT_TEMPERATURES)}")
             elif int(self.get(TEMPERATURE_DICT_INDEX)) == 6:
-                print(
-                    "Cleaning heat requests. Preparing to gather -stop heat- temperatures."
-                )
+                print("Cleaning heat requests. Preparing to gather -stop heat- temperatures.")
                 if self.get(TEMPERATURE_DICT_PROPERTY) != {}:
                     heat = self.get(TEMPERATURE_DICT_PROPERTY)
                     self.set(INIT_HEAT_TEMPERATURES, heat)
                 self.set(TEMPERATURE_DICT_PROPERTY, {})
                 stop_heat = self.get("stop_heating_behav")
+                print("check here?")
                 self.agent.add_behaviour(stop_heat)
-            if (
-                activate_learning
-                and self.get("init_complete")
-                and self.get("timeplan_heat") is not None
-                and self.get("timeplan_noheat") is not None
-            ):
+            if activate_learning and self.get("init_complete") and self.get("timeplan_heat") is not None and self.get("timeplan_noheat") is not None:
                 activate_learning = False
                 learning_behav = self.get("learning_behav")
+                print("adding learning behav")
+                self.set("init_complete", False)
                 self.agent.add_behaviour(learning_behav)
             if self.get("re_learn"):
-                print("Learning Agent: Started re-learning User Model. . .")
-                self.set("re_learn", False)
-                activate_learning = False
-                learning_behav = self.agent.LearningBehav()
-                self.agent.add_behaviour(learning_behav)
+                if self.get("timeplan_heat") is not None and self.get("timeplan_noheat") is not None:
+                    print("Learning Agent: Started re-learning User Model. . .")
+                    self.set("re_learn", False)
+                    activate_learning = False
+                    print("other adding learning behav")
+                    learning_behav = self.agent.LearningBehav()
+                    self.agent.add_behaviour(learning_behav)
+                else:
+                    print("WARN Learning agent: Not having timeplan set!")
 
         async def on_end(self):
             # stop agent from behaviour
@@ -241,6 +224,7 @@ class LearningAgent(SpadeAgent):
         self.set(TEMPERATURE_DICT_INDEX, 0)
         self.set(TEMPERATURE_DICT_PROPERTY, {})
         self.set("default_temperature", None)
+        self.set("init_complete", False)
 
         # TODO presence
         Inhabitant = SimUser(USER_GROUP_KNOWLEDGE, leave=[10], arrive=[13])
@@ -269,9 +253,7 @@ class LearningAgent(SpadeAgent):
             recv_temp_behav = self.RecvTemperatureInitBehav()
             stop_heat_behav = self.StopHeatingQueryBehav()
             self.set("stop_heating_behav", stop_heat_behav)
-            ask_temperature_after_period_behav = self.TemperatureQueryBehav(
-                period=TIME_INTERVAL
-            )
+            ask_temperature_after_period_behav = self.TemperatureQueryBehav(period=TIME_INTERVAL)
             self.set("period_temp_behav", ask_temperature_after_period_behav)
             self.add_behaviour(ask_temperature_after_period_behav)
             self.add_behaviour(increase_behav)

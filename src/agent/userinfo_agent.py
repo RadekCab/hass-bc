@@ -38,28 +38,20 @@ class UserAgent(DeviceAgent):
     # Spade specific
     class RecvTimeplanNoHeatBehav(PeriodicBehaviour):
         async def run(self):
-            await self.activate_mqqt_topic_listening(
-                self.get("mqtt_timeplan_noheat_topic")
-            )
+            await self.activate_mqqt_topic_listening(self.get("mqtt_timeplan_noheat_topic"))
 
         async def activate_mqqt_topic_listening(self, topic):
             async with sem:
-                await UserAgent.activate_mqqt_timeplan_topic_listening(
-                    self, topic, PROPERTY_TIMEPLAN_NOHEAT
-                )
+                await UserAgent.activate_mqqt_timeplan_topic_listening(self, topic, PROPERTY_TIMEPLAN_NOHEAT)
                 await asyncio.sleep(2)
 
     class RecvTimeplanHeatBehav(PeriodicBehaviour):
         async def run(self):
-            await self.activate_mqqt_topic_listening(
-                self.get("mqtt_timeplan_heat_topic")
-            )
+            await self.activate_mqqt_topic_listening(self.get("mqtt_timeplan_heat_topic"))
 
         async def activate_mqqt_topic_listening(self, topic):
             async with sem:
-                await UserAgent.activate_mqqt_timeplan_topic_listening(
-                    self, topic, PROPERTY_TIMEPLAN_HEAT
-                )
+                await UserAgent.activate_mqqt_timeplan_topic_listening(self, topic, PROPERTY_TIMEPLAN_HEAT)
                 await asyncio.sleep(2)
 
     class RecvMessagesBehav(CyclicBehaviour):
@@ -74,13 +66,12 @@ class UserAgent(DeviceAgent):
                     reply = Message(
                         to=str(self.template.sender),
                         sender=str(self.agent.jid),
-                        body="timeplan_reply:"
-                        + f"{self.get(PROPERTY_TIMEPLAN_HEAT)}; {self.get(PROPERTY_TIMEPLAN_NOHEAT)}",
+                        body="timeplan_reply:" + f"{self.get(PROPERTY_TIMEPLAN_HEAT)}; {self.get(PROPERTY_TIMEPLAN_NOHEAT)}",
                     )
                     # Set the message content
                     reply.set_metadata("performative", "inform")
                     await self.send(reply)
-                    print("User Agent: Reply sent to Learning Agent!")
+                    print("User Agent: Reply sent to Learning Agent!", reply.body)
                 else:
                     print("WARN User Agent: Received unknown message")
 
@@ -90,21 +81,22 @@ class UserAgent(DeviceAgent):
 
     async def setup(self):
         print("User agent started.")
-        self.set(PROPERTY_TIMEPLAN_NOHEAT, {})
-        self.set(PROPERTY_TIMEPLAN_HEAT, {})
+        if self.get("receive_from_hass"):
+            self.set(PROPERTY_TIMEPLAN_NOHEAT, {})
+            self.set(PROPERTY_TIMEPLAN_HEAT, {})
+            timeplan_recv_heat_behav = self.RecvTimeplanHeatBehav(period=3)
+            timeplan_recv_noheat_behav = self.RecvTimeplanNoHeatBehav(period=4)
+            self.add_behaviour(timeplan_recv_heat_behav)
+            self.add_behaviour(timeplan_recv_noheat_behav)
 
         template_timeplan_request = Template()
         template_timeplan_request.sender = LEARNING_CONTACT
         template_timeplan_request.body = "timeplan"
         template_timeplan_request.set_metadata("performative", "query")
 
-        timeplan_recv_heat_behav = self.RecvTimeplanHeatBehav(period=3)
-        timeplan_recv_noheat_behav = self.RecvTimeplanNoHeatBehav(period=4)
         periodic_timeplan_duplicates_check = self.ParametersCheckBehav(period=10)
         receive_timeplan_message_behav = self.RecvMessagesBehav()
 
-        self.add_behaviour(timeplan_recv_heat_behav)
-        self.add_behaviour(timeplan_recv_noheat_behav)
         self.add_behaviour(periodic_timeplan_duplicates_check)
         self.add_behaviour(receive_timeplan_message_behav, template_timeplan_request)
 

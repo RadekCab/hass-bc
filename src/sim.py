@@ -13,6 +13,8 @@ from agent.agents import ReflexAgent
 from agent.temperature_agent import TemperatureAgent
 from agent.learning_agent import LearningAgent
 from agent.userinfo_agent import UserAgent
+from agent.sim_temperature_dummy import SimTemperatureAgent
+from agent.sim_user_dummy import SimUserAgent
 from user import User
 
 
@@ -26,9 +28,7 @@ async def connect_to_topic(sensor):
         response = await mqtt.listen_to_topic(client, sensor.get_topic())
         await asyncio.sleep(3)
 
-        print(
-            f"RESPONSE INSIDE MAIN LOOP {client._userdata} RECEIVED BY {client._client_id}"
-        )
+        print(f"RESPONSE INSIDE MAIN LOOP {client._userdata} RECEIVED BY {client._client_id}")
         response = client._userdata
 
     return response
@@ -43,9 +43,7 @@ async def publish_to_topic(sensor):
 
         response = await mqtt.publish_to_topic(client, sensor.get_topic())
         await asyncio.sleep(3)
-        print(
-            f"RESPONSE INSIDE MAIN LOOP {client._userdata} RECEIVED BY {client._client_id}"
-        )
+        print(f"RESPONSE INSIDE MAIN LOOP {client._userdata} RECEIVED BY {client._client_id}")
         response = client._userdata
 
     return response
@@ -123,26 +121,31 @@ async def setup_agents(mode):
                         both use same time in the end
                         for better time interval uderstaning
     """
+    Dummy_real_temperature = SimTemperatureAgent(jid="simtemperature01@sure.im", password="simtemperature66")
+    Dummy_real_user = SimUserAgent(
+        jid="testuser01@sure.im",
+        pw="testuser66",
+        heat_at=[32, 84],
+        noheat_at=[60],
+    )
+
     jid = "devices12@sure.im"
     pw = "devices66"
     agent_id = uuid.uuid4()
 
-    utils.INTERVAL_SHORTENER = 1
-    temperature_agent = TemperatureAgent(
-        [], jid, pw, agent_id, "house/agents/temperature"
-    )
+    # utils.INTERVAL_SHORTENER = 2
+    temperature_agent = TemperatureAgent([], jid, pw, agent_id, "house/agents/temperature")
     temperature_agent.set("uuid", agent_id)
     temperature_agent.set("mqtt_temperature_topic", "house/room1/temperature")
     temperature_agent.set("mqtt_thermostat_topic", "house/room1/thermostat")
-    temperature_agent.set(
-        "mqtt_temperature_increase_topic", "house/room1/user/temp_increase"
-    )
-    temperature_agent.set(
-        "mqtt_temperature_decrease_topic", "house/room1/user/temp_decrease"
-    )
+    temperature_agent.set("mqtt_temperature_increase_topic", "house/room1/user/temp_increase")
+    temperature_agent.set("mqtt_temperature_decrease_topic", "house/room1/user/temp_decrease")
     temperature_agent.set("temperature", None)
-    temperature_agent.set("time", mode)
-
+    temperature_agent.set("time", "sim")
+    Dummy_real_user.set("time", mode)
+    temperature_agent.set("receive_from_hass", True)
+    if mode == "fast":
+        temperature_agent.set("receive_from_hass", False)
     # temperature starts heating
     # so activate fake temperature change simulation through topic
     # and automation that changes temp. in time
@@ -174,23 +177,38 @@ async def setup_agents(mode):
     user_agent = UserAgent([], topic="house/agents/user")
     user_agent.set("mqtt_timeplan_heat_topic", "room1/plan/heating")
     user_agent.set("mqtt_timeplan_noheat_topic", "room1/plan/noheating")
+    user_agent.set("receive_from_hass", True)
+    PROPERTY_TIMEPLAN_NOHEAT = "timeplan_noheat"
+    PROPERTY_TIMEPLAN_HEAT = "timeplan_heat"
+    if mode == "fast":
+        user_agent.set("receive_from_hass", False)
+        user_agent.set(PROPERTY_TIMEPLAN_NOHEAT, {60: "index"})
+        user_agent.set(PROPERTY_TIMEPLAN_HEAT, {32: "index", 84: "index"})
+        learning_agent.set("fastmode", True)
 
+    # TODO test with default temperature = 20
+
+    await Dummy_real_temperature.start(False)
+    await Dummy_real_user.start(False)
     await temperature_agent.start(False)
     await user_agent.start(False)
     await learning_agent.start(False)
-    print("Agents Started")
+
+    print("*** Agents Started ***")
     await spade.wait_until_finished(temperature_agent)
     await spade.wait_until_finished(learning_agent)
     await spade.wait_until_finished(user_agent)
+    await spade.wait_until_finished(Dummy_real_temperature)
+    await spade.wait_until_finished(Dummy_real_user)
 
 
 if __name__ == "__main__":
     argv = sys.argv[1:]
-    mode = "sim"
+    mode = "fast"
     opts, args = getopt.getopt(argv, "m:", ["mode="])
     for opt, arg in opts:
         if opt in ("-m", "--mode"):
-            if arg == "sim" or arg == "real":
+            if arg == "sim" or arg == "real" or arg == "fast":
                 mode = arg
             else:
                 print("WARN Unknown Command Line Parameter.", arg)
